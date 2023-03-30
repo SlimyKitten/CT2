@@ -83,11 +83,15 @@ def evaporator(X, Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k):
     
         
     if vary_k:
-        raise Exception('Varying k-values not implemented')
+        [k1,dummy]=k_black_liquor(xL2, xL1, Ts, L2, L1)
+        [k2,dummy]=k_black_liquor(xL3, xL2, T1, L3, L2)
+        [k3,dummy]=k_black_liquor(xF,  xL3, T2, F,  L3)
         # ? Delete line above and write some code here to implement
         # ? handling of boiling point elevation
     else:
-        k=k_constant
+        k1=k_constant
+        k2=k_constant
+        k3=k_constant
 
     # ================ Calculating residuals: ==================
     #
@@ -97,21 +101,21 @@ def evaporator(X, Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k):
     Y[0]=L2-L1-V1                           # MB total
     Y[1]=xL2*L2-xL1*L1                      # MB solids
     Y[2]=S*(Hs-hk1)+L2*hL2-L1*hL1-V1*HV1    # EB over evaporator
-    Y[3]=S*(Hs-hk1)-k*A*(Ts-T1)             # EB over heat exchanger
+    Y[3]=S*(Hs-hk1)-k1*A*(Ts-T1)             # EB over heat exchanger
 
 
     # evaporator 2
     Y[4]=L3-L2-V2                           # MB total
     Y[5]=xL3*L3-xL2*L2                      # MB solids
     Y[6]=V1*(HV1-hk2)+L3*hL3-L2*hL2-V2*HV2  # EB over evaporator
-    Y[7]=V1*(HV1-hk2)-k*A*(T1-T2)           # EB over heat exchanger
+    Y[7]=V1*(HV1-hk2)-k2*A*(T1-T2)           # EB over heat exchanger
 
 
     # evaporator 3
     Y[8]=F-L3-V3                            # MB total
     Y[9]=xF*F-xL3*L3                        # MB solids
     Y[10]=V2*(HV2-hk3)+F*hF-L3*hL3-V3*HV3   # EB over evaporator
-    Y[11]=V2*(HV2-hk3)-k*A*(T2-T3)          # EB over heat exchanger
+    Y[11]=V2*(HV2-hk3)-k3*A*(T2-T3)          # EB over heat exchanger
 
     return Y
 
@@ -124,7 +128,7 @@ xF = 0.25           # kg dry matter/kg total  Feed dry matter content
 xL1= 0.8            # kg dry matter/kg total  Product dry matter content
 k_constant = 0.855  # kW/m2/K                 Overall heat transfer coeff
 use_BPE=False
-vary_k=False
+vary_k=True
 
 known=(Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k)
 
