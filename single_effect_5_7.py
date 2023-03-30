@@ -3,11 +3,11 @@
 import math
 import numpy as np
 from scipy.optimize import root
-from hL_gelatine import hL_gelatine #? Delete this line when working with CT2
+#from hL_gelatine import hL_gelatine #? Delete this line when working with CT2
 from H_steam import H_steam
-#? from hL_black_liquor import hL_black_liquor
-#? from BPE import BPE
-#? from k_black_liquor import k_black_liquor
+from hL_black_liquor import hL_black_liquor
+from BPE import BPE
+from k_black_liquor import k_black_liquor
 
 
 def Ts_from_Ps_water(Ps):
@@ -60,6 +60,7 @@ def evaporator(X,F,xF,Tf,Ps,TL,xL,k_constant,use_BPE,vary_k):
     # =============== Calculations start here ==================
     #
     if use_BPE:
+        bpe = BPE(xL)
         raise Exception('Boiling point elevation not implemented')
         # ? Delete line above and write some code here to implement
         # ? handling of boiling point elevation
