@@ -10,15 +10,16 @@ from BPE import BPE
 from k_black_liquor import k_black_liquor
 
 
-def Ts_from_Ps_water(Ps):
-    # ? Note: In task 5.7 we were given the steam pressure
-    # ? You wont be needing Antoines equation in the compulsory task
-    # Calculation of vapor temperature (saturated steam)
-    Ts=1730.630/(-math.log10(Ps)+10.19625)-233.426 # Antoine equation, see handbook
-    return Ts
+#def Ts_from_Ps_water(Ps):
+#    # ? Note: In task 5.7 we were given the steam pressure
+#    # ? You wont be needing Antoines equation in the compulsory task
+#    # Calculation of vapor temperature (saturated steam)
+#    Ts=1730.630/(-math.log10(Ps)+10.19625)-233.426 # Antoine equation, see handbook
+#    return Ts
 
 
-def evaporator(X,F,xF,Tf,Ps,TL,xL,k_constant,use_BPE,vary_k):
+def evaporator(X, Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k):
+    T3=Tc
     #Calculates residuals of mass and energy balances for an evaporator
     #
     #    Input: X contains guesses of operating conditions in this order
@@ -32,7 +33,7 @@ def evaporator(X,F,xF,Tf,Ps,TL,xL,k_constant,use_BPE,vary_k):
     #       F              kg/s     Feed flow
     #       xF             kg/kg    Solids fraction in feed
     #       Tf             Celsius  Feed temperature
-    #       Ps             Pa       Fresh steam pressure
+    #       Ts             Celcius  Fresh steam temperature
     #       TL             Celsius  Product stream temperature
     #       xL             kg/kg    Solids fraction in product stream
     #       k_constant     J/m2,K   Overall heat transfer coefficient
@@ -55,33 +56,31 @@ def evaporator(X,F,xF,Tf,Ps,TL,xL,k_constant,use_BPE,vary_k):
     # ================ Initialisation ========================= 
     #
     # Copy X-values to variables that are easier to understand
-    [S,V,L,A]=X
+    [L1,L2,L3,V1,V2,V3,S,xL2,xL3,A,T1,T2]=X
 
     # =============== Calculations start here ==================
     #
     if use_BPE:
-        bpe = BPE(xL)
         raise Exception('Boiling point elevation not implemented')
+        bpe = BPE(xL)
         # ? Delete line above and write some code here to implement
         # ? handling of boiling point elevation
-
-    # ? Note: In this task we were given the steam pressure
-    # ? You wont be needing Antoines equation in the compulsory task
-    # Calculation of vapor temperature (saturated steam)
-    Ts=Ts_from_Ps_water(Ps)
 
     # Calculation of water vapor enthalpies 
     # ? NOTE: To calculate H for overheated steam, 2nd argument cannot be -1
     [Hs,dummy1,dummy2]=H_steam(Ts,-1) 
-    [HV,dummy1,dummy2]=H_steam(TL,-1)
+    [HV1,dummy1,dummy2]=H_steam(T1,-1)
+    [HV2,dummy1,dummy2]=H_steam(T2,-1)
+    [HV3,dummy1,dummy2]=H_steam(T3,-1)
 
-    #Calculation of other enthalpies
-    # ? Note that hLGelatine calculates the liquid enthalpy for gelatine
-    # ? solutions. To do calculations for black liquor, you will need to call
-    # ? hLBlackLiquor instead
-    hf=hL_gelatine(xF,Tf)
-    hL=hL_gelatine(xL,TL)
-    hk=hL_gelatine(0,Ts)
+    hk1=hL_black_liquor(0,Ts)
+    hL1=hL_black_liquor(xL1,T1)
+    hk2=hL_black_liquor(0,T1)
+    hL2=hL_black_liquor(xL2,T2)
+    hk3=hL_black_liquor(0,T2)
+    hL3=hL_black_liquor(xL3,T3)
+    hF =hL_black_liquor(xF,Tf)
+    
         
     if vary_k:
         raise Exception('Varying k-values not implemented')
@@ -93,31 +92,47 @@ def evaporator(X,F,xF,Tf,Ps,TL,xL,k_constant,use_BPE,vary_k):
     # ================ Calculating residuals: ==================
     #
     # 
-    # evaporator 1
     Y=X*0
-    Y[0]=V+L-F # MB total
-    Y[1]=F*xF-L*xL # MB solids
-    Y[2]=S*(Hs-hk)+F*hf-V*HV-L*hL # EB over evaporator 
-    Y[3]=S*(Hs-hk)-k*A*(Ts-TL) # EB over heat exchanger
-    # Note: Which equation is used for which position in Y does not matter
-    # You may choose an order you think makes the code the easiest to read
+    # evaporator 1
+    Y[0]=L2-L1-V1                           # MB total
+    Y[1]=xL2*L2-xL1*L1                      # MB solids
+    Y[2]=S*(Hs-hk1)+L2*hL2-L1*hL1-V1*HV1    # EB over evaporator
+    Y[3]=S*(Hs-hk1)-k*A*(Ts-T1)             # EB over heat exchanger
+
+
+    # evaporator 2
+    Y[4]=L3-L2-V2                           # MB total
+    Y[5]=xL3*L3-xL2*L2                      # MB solids
+    Y[6]=V1*(HV1-hk2)+L3*hL3-L2*hL2-V2*HV2  # EB over evaporator
+    Y[7]=V1*(HV1-hk2)-k*A*(T1-T2)           # EB over heat exchanger
+
+
+    # evaporator 3
+    Y[8]=F-L3-V3                            # MB total
+    Y[9]=xF*F-xL3*L3                        # MB solids
+    Y[10]=V2*(HV2-hk3)+F*hF-L3*hL3-V3*HV3   # EB over evaporator
+    Y[11]=V2*(HV2-hk3)-k*A*(T2-T3)          # EB over heat exchanger
+
     return Y
 
-# ? Current data: excercise 5.7 in course KETF10
-F=1e3/3600# kg/s                     Feed flux
-xF=0.05   # kg dry matter/kg total   Feed dry matter content 
-xL_out=0.25# kg dry matter/kg total   Dry matter content from last evaporator
-Tf=80     # degrees C                Feed temperature
-Ps=200e3  # Pa                       Pressure of steam used
-T=99.61  #  degrees C      Temperature for vapor flow from last evaporator
-k=1.6    #  kW/m2/K                  Overall heat transfer coeff
-use_BPE=False # Should boiling point elevation be taken into account?
-vary_k=False # Should k-value depend on temperature etc.?
 
-# Note: In Python a so called tuple can contain different data types
-# thus we can have a boolean in the same tuple as some floats
-known=(F,xF,Tf,Ps,T,xL_out,k,use_BPE,vary_k) 
-guess=np.array([F, F, F, 100]) #Set initial guesses
+Ts = 158.83         # degrees C               Temperature fresh steam
+Tc = 45.81          # degrees C               Temperature Condenser
+F  = 15             # kg/s                    Feed flux
+Tf = 40             # degrees C               Feed temperature
+xF = 0.25           # kg dry matter/kg total  Feed dry matter content
+xL1= 0.8            # kg dry matter/kg total  Product dry matter content
+k_constant = 0.855  # kW/m2/K                 Overall heat transfer coeff
+use_BPE=False
+vary_k=False
+
+known=(Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k)
+
+T_guess=90 #degrees C
+flow_guess=7 #kg/s
+feed_fraction_guess = (xF+xL1)/2
+# Unknowns: L1,L2,L3,V1,V2,V3,S,xL2,xL3,A,T1,T2
+guess=np.array([*[flow_guess]*7,feed_fraction_guess,feed_fraction_guess,200,T_guess,T_guess]) #Set initial guesses
 
 sol = root(evaporator, guess, args=known, method='hybr')
 
@@ -126,15 +141,21 @@ if not sol.success:
 else:
     print('Iteration successful:',sol.message)
 # Translate results to variable names easier to understand
-[S, V, L, A]=sol.x[:]
+print(sol.x)
+[L1,L2,L3,V1,V2,V3,S,xL2,xL3,A,T1,T2]=sol.x[:]
+print(F-L3)
+print(L3-L2)
+print(L2-L1)
+print(F,L3, L2, L1)
+
 
 # You can use the command "print" to print results
-print('Steam flux',S,'kg/s' )
-print('Vapor flux',V,'kg/s' )
-print('Liquid flux',L,'kg/s' )
-print('Area',A,'m2' )
-print('S/Vtot',S/V)
-print('Vtot/S',V/S)
+# print('Steam flux',S,'kg/s' )
+# print('Vapor flux',V,'kg/s' )
+# print('Liquid flux',L,'kg/s' )
+# print('Area',A,'m2' )
+# print('S/Vtot',S/V)
+# print('Vtot/S',V/S)
 
 # Recalculate other results
 # ? Note: A common beginners method to retrieve these kind of values is
@@ -144,14 +165,14 @@ print('Vtot/S',V/S)
 # ?    last call of the function, will use the correct solution
 # ? 2. Printing out things to the screen every time a function is called
 # ?    by the solver slows down the calculation considerably
-Ts=Ts_from_Ps_water(Ps)
-[Hs,P,dummy]=H_steam(Ts,-1)
-[HV,P,dummy]=H_steam(T,-1)
-print('Ts',Ts,'degree C')
-print('Steam enthalpy Hs',Hs,'kJ/kg')
-
-#? Variables in Python can easily be printed to files
-#? Note: the "w" argument WRITEs over the file if it already exists
-#? If you instead want to APPEND your new results to end of file, change to "a"
-with open("output.txt", "w") as f:
-  print(S,V,L,A,Ts,Hs,HV, file=f)
+#Ts=Ts_from_Ps_water(Ps)
+#[Hs,P,dummy]=H_steam(Ts,-1)
+#[HV,P,dummy]=H_steam(T,-1)
+#print('Ts',Ts,'degree C')
+#print('Steam enthalpy Hs',Hs,'kJ/kg')
+#
+##? Variables in Python can easily be printed to files
+##? Note: the "w" argument WRITEs over the file if it already exists
+##? If you instead want to APPEND your new results to end of file, change to "a"
+#with open("output.txt", "w") as f:
+#  print(S,V,L,A,Ts,Hs,HV, file=f)
