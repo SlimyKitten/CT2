@@ -19,7 +19,6 @@ from k_black_liquor import k_black_liquor
 
 
 def evaporator(X, Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k):
-    T3=Tc
     #Calculates residuals of mass and energy balances for an evaporator
     #
     #    Input: X contains guesses of operating conditions in this order
@@ -61,10 +60,15 @@ def evaporator(X, Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k):
     # =============== Calculations start here ==================
     #
     if use_BPE:
-        raise Exception('Boiling point elevation not implemented')
-        bpe = BPE(xL)
-        # ? Delete line above and write some code here to implement
-        # ? handling of boiling point elevation
+        b1=BPE(xL2)
+        b2=BPE(xL3)
+        b3=BPE(xF)
+    else:
+        b1=0
+        b2=0
+        b3=0
+
+    T3=Tc+b3
 
     # Calculation of water vapor enthalpies 
     # ? NOTE: To calculate H for overheated steam, 2nd argument cannot be -1
@@ -108,14 +112,14 @@ def evaporator(X, Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k):
     Y[4]=L3-L2-V2                           # MB total
     Y[5]=xL3*L3-xL2*L2                      # MB solids
     Y[6]=V1*(HV1-hk2)+L3*hL3-L2*hL2-V2*HV2  # EB over evaporator
-    Y[7]=V1*(HV1-hk2)-k2*A*(T1-T2)           # EB over heat exchanger
+    Y[7]=V1*(HV1-hk2)-k2*A*(T1-b1-T2)           # EB over heat exchanger
 
 
     # evaporator 3
     Y[8]=F-L3-V3                            # MB total
     Y[9]=xF*F-xL3*L3                        # MB solids
     Y[10]=V2*(HV2-hk3)+F*hF-L3*hL3-V3*HV3   # EB over evaporator
-    Y[11]=V2*(HV2-hk3)-k3*A*(T2-T3)          # EB over heat exchanger
+    Y[11]=V2*(HV2-hk3)-k3*A*(T2-b2-T3)          # EB over heat exchanger
 
     return Y
 
@@ -127,7 +131,7 @@ Tf = 40             # degrees C               Feed temperature
 xF = 0.25           # kg dry matter/kg total  Feed dry matter content
 xL1= 0.8            # kg dry matter/kg total  Product dry matter content
 k_constant = 0.855  # kW/m2/K                 Overall heat transfer coeff
-use_BPE=False
+use_BPE=True
 vary_k=True
 
 known=(Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k)
@@ -145,12 +149,25 @@ if not sol.success:
 else:
     print('Iteration successful:',sol.message)
 # Translate results to variable names easier to understand
-print(sol.x)
 [L1,L2,L3,V1,V2,V3,S,xL2,xL3,A,T1,T2]=sol.x[:]
-print(F-L3)
-print(L3-L2)
-print(L2-L1)
-print(F,L3, L2, L1)
+print(f"L1: {L1}")
+print(f"L2: {L2}")
+print(f"L3: {L3}")
+print(f"V1: {V1}")
+print(f"V2: {V2}")
+print(f"V3: {V3}")
+print(f"S: {S}")
+print(f"xL2: {xL2}")
+print(f"xL3: {xL3}")
+print(f"A: {A}")
+print(f"T1: {T1}")
+print(f"T2: {T2}")
+print(f"k1: {k_black_liquor(xL2, xL1, Ts, L2, L1)[0]}")
+print(f"k2: {k_black_liquor(xL3, xL2, T1, L3, L2)[0]}")
+print(f"k3: {k_black_liquor(xF,  xL3, T2, F,  L3)[0]}")
+print(f"Steam eco: {V3/S}")
+
+
 
 
 # You can use the command "print" to print results
