@@ -60,9 +60,9 @@ def evaporator(X, Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k):
     # =============== Calculations start here ==================
     #
     if use_BPE:
-        b1=BPE(xL2)
-        b2=BPE(xL3)
-        b3=BPE(xF)
+        b1=BPE(xL1)
+        b2=BPE(xL2)
+        b3=BPE(xL3)
     else:
         b1=0
         b2=0
@@ -72,16 +72,16 @@ def evaporator(X, Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k):
 
     # Calculation of water vapor enthalpies 
     # ? NOTE: To calculate H for overheated steam, 2nd argument cannot be -1
-    [Hs,dummy1,dummy2]=H_steam(Ts,-1) 
-    [HV1,dummy1,dummy2]=H_steam(T1,-1)
-    [HV2,dummy1,dummy2]=H_steam(T2,-1)
-    [HV3,dummy1,dummy2]=H_steam(T3,-1)
+    [Hs,dummy1,dummy2]=H_steam(Ts,Ts) 
+    [HV1,dummy1,dummy2]=H_steam(T1-b1,T1)
+    [HV2,dummy1,dummy2]=H_steam(T2-b2,T2)
+    [HV3,dummy1,dummy2]=H_steam(T3-b3,T3)
 
     hk1=hL_black_liquor(0,Ts)
     hL1=hL_black_liquor(xL1,T1)
-    hk2=hL_black_liquor(0,T1)
+    hk2=hL_black_liquor(0,T1-b1)
     hL2=hL_black_liquor(xL2,T2)
-    hk3=hL_black_liquor(0,T2)
+    hk3=hL_black_liquor(0,T2-b2)
     hL3=hL_black_liquor(xL3,T3)
     hF =hL_black_liquor(xF,Tf)
     
