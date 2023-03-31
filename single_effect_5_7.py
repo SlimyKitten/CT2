@@ -1,21 +1,10 @@
-# ? Comments that begin with a question mark are hints to students using
-# ? this code as a starting point for calculating something different
 import math
 import numpy as np
 from scipy.optimize import root
-#from hL_gelatine import hL_gelatine #? Delete this line when working with CT2
 from H_steam import H_steam
 from hL_black_liquor import hL_black_liquor
 from BPE import BPE
 from k_black_liquor import k_black_liquor
-
-
-#def Ts_from_Ps_water(Ps):
-#    # ? Note: In task 5.7 we were given the steam pressure
-#    # ? You wont be needing Antoines equation in the compulsory task
-#    # Calculation of vapor temperature (saturated steam)
-#    Ts=1730.630/(-math.log10(Ps)+10.19625)-233.426 # Antoine equation, see handbook
-#    return Ts
 
 
 def evaporator(X, Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k):
@@ -70,8 +59,6 @@ def evaporator(X, Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k):
 
     T3=Tc+b3
 
-    # Calculation of water vapor enthalpies 
-    # ? NOTE: To calculate H for overheated steam, 2nd argument cannot be -1
     [Hs,dummy1,dummy2]=H_steam(Ts,Ts) 
     [HV1,dummy1,dummy2]=H_steam(T1-b1,T1)
     [HV2,dummy1,dummy2]=H_steam(T2-b2,T2)
@@ -131,8 +118,8 @@ Tf = 40             # degrees C               Feed temperature
 xF = 0.25           # kg dry matter/kg total  Feed dry matter content
 xL1= 0.8            # kg dry matter/kg total  Product dry matter content
 k_constant = 0.855  # kW/m2/K                 Overall heat transfer coeff
-use_BPE=True
-vary_k=True
+use_BPE=False
+vary_k=False
 
 known=(Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k)
 
@@ -150,27 +137,61 @@ else:
     print('Iteration successful:',sol.message)
 # Translate results to variable names easier to understand
 [L1,L2,L3,V1,V2,V3,S,xL2,xL3,A,T1,T2]=sol.x[:]
-print(f"L1: {L1}")
-print(f"L2: {L2}")
-print(f"L3: {L3}")
-print(f"V1: {V1}")
-print(f"V2: {V2}")
-print(f"V3: {V3}")
-print(f"S: {S}")
-print(f"xL2: {xL2}")
-print(f"xL3: {xL3}")
-print(f"A: {A}")
-print(f"T1: {T1}")
-print(f"T2: {T2}")
-if(vary_k):
-    print(f"k1: {k_black_liquor(xL2, xL1, Ts, L2, L1)[0]}")
-    print(f"k2: {k_black_liquor(xL3, xL2, T1, L3, L2)[0]}")
-    print(f"k3: {k_black_liquor(xF,  xL3, T2, F,  L3)[0]}")
+if(use_BPE):
+    b1=BPE(xL1)
+    b2=BPE(xL2)
+    b3=BPE(xL3)
 else:
-    print(f'k1: {k_constant}')
-    print(f'k2: {k_constant}')
-    print(f'k3: {k_constant}')
-print(f"Steam eco: {(V1+V2+V3)/S}")
+    b1=0
+    b2=0
+    b3=0
+T3=Tc+b3
+[Hs,dummy1,dummy2]=H_steam(Ts,Ts) 
+[HV1,dummy1,dummy2]=H_steam(T1-b1,T1)
+[HV2,dummy1,dummy2]=H_steam(T2-b2,T2)
+[HV3,dummy1,dummy2]=H_steam(T3-b3,T3)
+hk1=hL_black_liquor(0,Ts)
+hL1=hL_black_liquor(xL1,T1)
+hk2=hL_black_liquor(0,T1-b1)
+hL2=hL_black_liquor(xL2,T2)
+hk3=hL_black_liquor(0,T2-b2)
+hL3=hL_black_liquor(xL3,T3)
+hF =hL_black_liquor(xF,Tf)
+if(vary_k):
+    k1=k_black_liquor(xL2, xL1, Ts, L2, L1)[0]
+    k2=k_black_liquor(xL3, xL2, T1, L3, L2)[0]
+    k3=k_black_liquor(xF,  xL3, T2, F,  L3)[0]
+else:
+    k1=k_constant
+    k2=k_constant
+    k3=k_constant
+print(f'Tf: {Tf:.2f}')
+print(f'Ts: {Ts:.2f}')
+print(f"T1: {T1:.2f}")
+print(f"T2: {T2:.2f}")
+print(f'T3: {T3:.2f}')
+print(f'F: {F:.3f}')
+print(f"S: {S:.3f}")
+print(f"V1: {V1:.3f}")
+print(f"V2: {V2:.3f}")
+print(f"V3: {V3:.3f}")
+print(f"L1: {L1:.3f}")
+print(f"L2: {L2:.3f}")
+print(f"L3: {L3:.3f}")
+print(f'xF: {xF:.3f}')
+print(f'xL1: {xL1:.3f}')
+print(f"xL2: {xL2:.3f}")
+print(f"xL3: {xL3:.3f}")
+print(f"A: {A:.2f}")
+print(f"Steam eco: {(V1+V2+V3)/S:.3f}")
+print(f"k1: {k1:.3f}")
+print(f"k2: {k2:.3f}")
+print(f"k3: {k3:.3f}")
+print(f'b1: {b1:.2f}')
+print(f'b2: {b2:.2f}')
+print(f'b3: {b3:.2f}')
+print(f"Qtot/1e3: {(S*(Hs-hk1)+V1*(HV1-hk2)+V2*(HV2-hk3))/1000:.2f}")
+print(f'k_avg: {(k1+k2+k3)/3:.3f}')
 
 
 
