@@ -87,9 +87,9 @@ def evaporator(X, Ts, Tc, F, Tf, xF, xL1, k_constant,use_BPE,vary_k):
     
         
     if vary_k:
-        [k1,dummy]=k_black_liquor(xL2, xL1, Ts, L2, L1)
-        [k2,dummy]=k_black_liquor(xL3, xL2, T1, L3, L2)
-        [k3,dummy]=k_black_liquor(xF,  xL3, T2, F,  L3)
+        [k1,dummy]=k_black_liquor(xL2, xL1, T1, L2, L1)
+        [k2,dummy]=k_black_liquor(xL3, xL2, T2, L3, L2)
+        [k3,dummy]=k_black_liquor(xF,  xL3, T3, F,  L3)
         # ? Delete line above and write some code here to implement
         # ? handling of boiling point elevation
     else:
@@ -162,10 +162,16 @@ print(f"xL3: {xL3}")
 print(f"A: {A}")
 print(f"T1: {T1}")
 print(f"T2: {T2}")
-print(f"k1: {k_black_liquor(xL2, xL1, Ts, L2, L1)[0]}")
-print(f"k2: {k_black_liquor(xL3, xL2, T1, L3, L2)[0]}")
-print(f"k3: {k_black_liquor(xF,  xL3, T2, F,  L3)[0]}")
-print(f"Steam eco: {V3/S}")
+if(vary_k):
+    print(f"k1: {k_black_liquor(xL2, xL1, Ts, L2, L1)[0]}")
+    print(f"k2: {k_black_liquor(xL3, xL2, T1, L3, L2)[0]}")
+    print(f"k3: {k_black_liquor(xF,  xL3, T2, F,  L3)[0]}")
+else:
+    print(f'k1: {k_constant}')
+    print(f'k2: {k_constant}')
+    print(f'k3: {k_constant}')
+print(f"Steam eco: {(V1+V2+V3)/S}")
+
 
 
 
